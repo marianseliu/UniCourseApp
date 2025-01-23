@@ -33,28 +33,100 @@
             background-color: #004400;
         }
     </style>
+    <script>
+
+        function loadCourses() {
+            fetch('/courses-json')
+                .then(response => response.json())
+                .then(courses => {
+                    const tbody = document.getElementById('courses-list');
+                    courses.forEach(course => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${course.id}</td>
+                            <td>${course.title}</td>
+                            <td>${course.description}</td>
+                            <td>${course.credits}</td>
+                        `;
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.onclick = () => deleteCourse(course.id);
+                        const deleteCell = document.createElement('td');
+                        deleteCell.appendChild(deleteButton);
+                        row.appendChild(deleteCell);
+                        tbody.appendChild(row);
+                    });
+                    
+                })
+                .catch(error => console.error('Error fetching courses:', error));
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCourses()
+        });
+        function deleteCourse(courseId) {
+            fetch(`/delete-course/${courseId}`, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('courses-list').innerHTML = '';
+                    loadCourses()
+                } else {
+                    console.error('Failed to delete course');
+                }
+            })
+            .catch(error => console.error('Error deleting course:', error));
+        }
+        function addCourse(course) {
+            fetch('/add-course', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(course),
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('courses-list').innerHTML = '';
+                    loadCourses();
+                } else {
+                    console.error('Failed to add course');
+                }
+            })
+            .catch(error => console.error('Error adding course:', error));
+        }
+    </script>
 </head>
 <body>
     <h1>Course List</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Credits</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for course in courses %}
-            <tr>
-                <td>{{ course.id }}</td>
-                <td>{{ course.title }}</td>
-                <td>{{ course.description }}</td>
-                <td>{{ course.credits }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="text-align: center; margin-top: 20px;">
+        <h2>Add New Course</h2>
+        <form id="add-course-form" onsubmit="event.preventDefault(); submitCourseForm();">
+            <label for="course-id">ID:</label>
+            <input type="text" id="course-id" name="course-id" required><br><br>
+            <label for="course-title">Title:</label>
+            <input type="text" id="course-title" name="course-title" required><br><br>
+            <label for="course-description">Description:</label>
+            <input type="text" id="course-description" name="course-description" required><br><br>
+            <label for="course-credits">Credits:</label>
+            <input type="number" id="course-credits" name="course-credits" required><br><br>
+            <button type="submit">Add Course</button>
+        </form>
+    </div>
+    <script>
+        function submitCourseForm() {
+            const course = {
+                id: document.getElementById('course-id').value,
+                title: document.getElementById('course-title').value,
+                description: document.getElementById('course-description').value,
+                credits: document.getElementById('course-credits').value,
+            };
+            addCourse(course);
+        }
+    </script>
+    <hr>
+    <div id="courses-list">
+        <!-- Course items will be dynamically inserted here -->
+    </div>
 </body>
 </html>
